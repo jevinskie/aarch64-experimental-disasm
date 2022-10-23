@@ -6,7 +6,8 @@ from aarch64_experimental_disasm import mra_encoding_xml
 
 
 def real_main(args):
-    pass
+    encs = mra_encoding_xml.parse_encodings_xml(args.xml_dir)
+    print(encs)
 
 
 def get_arg_parser() -> argparse.ArgumentParser:
