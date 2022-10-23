@@ -1,0 +1,16 @@
+# MRA
+mra-2022-09/
+mra-a64-xml
+
+# vscode
+**/.vscode/
+
+# build folder
+build/
+
+# mac
+**/.DS_Store
+
+# python
+**/__pycache__
+**/*.egg-info
