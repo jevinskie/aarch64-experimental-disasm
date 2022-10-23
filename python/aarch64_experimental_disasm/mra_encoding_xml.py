@@ -1,7 +1,9 @@
+import re
 from pathlib import Path
+from typing import Union
 
 from attrs import define
-from lxml import etree, objectify
+from lxml import objectify
 
 
 @define
@@ -12,6 +14,20 @@ class Encoding:
     pos_bitpattern: int
     neg_bitmask: int
     neg_bitpattern: int
+
+
+BINSTR_RE = re.compile("[01]+")
+
+
+def c_val(box) -> Union[None, int]:
+    assert "constraint" not in box.attrib
+    if all(c.text is None for c in box.c):
+        return None
+    bitstr = ""
+    for c in box.c:
+        assert BINSTR_RE.fullmatch(c.text)
+        bitstr += c.text
+    return int(bitstr, 2)
 
 
 def parse_encodings_xml(xml_dir: str) -> list[Encoding]:
@@ -29,7 +45,9 @@ def parse_encodings_xml(xml_dir: str) -> list[Encoding]:
             hibit = int(b.attrib["hibit"])
             lobit = hibit - (width - 1)
             name = None if "name" not in b.attrib else b.attrib["name"]
-            print(f"field [{lobit}, {hibit}]")
+            bval = c_val(b)
+            bval_str = "None" if bval is None else f"{bval:0{width}b}"
+            print(f"field {name} [{lobit}, {hibit}] bval: {bval_str}")
 
     encodings = []
 
