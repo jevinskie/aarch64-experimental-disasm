@@ -2,6 +2,7 @@ import re
 from pathlib import Path
 from typing import Optional, Union
 
+import lxml.objectify
 from attrs import define
 from lxml import objectify
 from rich import print
@@ -10,7 +11,7 @@ from rich import print
 @define
 class Constraint:
     val: int
-    ne: bool
+    neg: bool
 
 
 @define
@@ -43,8 +44,35 @@ def bitmask(pos: int, nbits: int) -> int:
     return hi_mask ^ lo_mask
 
 
-def parse_boxes(box) -> tuple[Field]:
-    return ()
+def parse_box(box) -> Field:
+    sz = 1 if "width" not in box.attrib else int(box.attrib["width"])
+    pos = int(box.attrib["hibit"]) - sz
+    name = None
+    if "name" in box.attrib and "usename" in box.attrib:
+        name = box.attrib["name"]
+    if all(c.text is None for c in box.c):
+        constraint = None
+    else:
+        if "constraint" in box.attrib:
+            cstr = box.attrib["constraint"]
+            if not cstr.startswith("!= "):
+                constraint = Constraint(int(cstr, 2), False)
+            else:
+                cstr = cstr.removeprefix("!= ")
+                constraint = Constraint(int(cstr, 2), True)
+        else:
+            cval = 0
+            for c in box.c:
+                cval = (cval << 1) | int(c.text, 2)
+            constraint = Constraint(cval, False)
+    return Field(pos, sz, constraint, name)
+
+
+def parse_boxes(boxes: lxml.objectify.ObjectifiedElement) -> tuple[Field]:
+    fields = []
+    for b in boxes:
+        fields.append(parse_box(b))
+    return tuple(fields)
 
 
 def parse_fields(fields: tuple[Field]) -> tuple[int, int, int, int]:
@@ -75,44 +103,13 @@ def parse_instruction_xml(xml_instsect_file: Path) -> tuple[Encoding]:
         mnemonic = next(
             filter(lambda dv: dv.attrib["key"] == "mnemonic", iclass.docvars.docvar)
         ).attrib["value"]
-        boxes = iclass.regdiagram.box
-        fields = parse_boxes(boxes)
+        fields = parse_boxes(iclass.regdiagram.box)
         pos_mask, pos_val, neg_mask, neg_val = parse_fields(fields)
         enc = Encoding(mnemonic, name, path, pos_mask, pos_val, neg_mask, neg_val, fields)
-        print(iclass)
-    return tuple(*encodings)
-
-
-def c_val(box) -> Union[None, int]:
-    assert "constraint" not in box.attrib
-    if all(c.text is None for c in box.c):
-        return None
-    bitstr = ""
-    for c in box.c:
-        assert BINSTR_RE.fullmatch(c.text)
-        bitstr += c.text
-    return int(bitstr, 2)
+        encodings.append(enc)
+    return tuple(encodings)
 
 
 def parse_encodings_xml(xml_dir: Path) -> tuple[Encoding]:
-    enc_xml_path = xml_dir / "encodingindex.xml"
-    tree = objectify.parse(str(enc_xml_path))
-    root = tree.getroot()
-    iclass_sects = root.iclass_sect
-    for iclass in iclass_sects:
-        if iclass.attrib["id"] != "compbranch":
-            continue
-        rd = iclass.regdiagram
-        print(rd.attrib["psname"])
-        for b in rd.box:
-            width = 1 if "width" not in b.attrib else int(b.attrib["width"])
-            hibit = int(b.attrib["hibit"])
-            lobit = hibit - (width - 1)
-            name = None if "name" not in b.attrib else b.attrib["name"]
-            bval = c_val(b)
-            bval_str = "None" if bval is None else f"{bval:0{width}b}"
-            print(f"field {name} [{lobit}, {hibit}] bval: {bval_str}")
-
     encodings = []
-
-    return tuple(*encodings)
+    return tuple(encodings)
