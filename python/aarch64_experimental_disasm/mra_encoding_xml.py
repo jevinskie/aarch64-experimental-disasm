@@ -153,5 +153,5 @@ def parse_encodings_xml(xml_dir: Path) -> list[Encoding]:
     encodings = []
     xml_files = xml_dir.glob("*.xml")
     for f in xml_files:
-        encodings.append(parse_instruction_xml(f))
+        encodings += parse_instruction_xml(f)
     return encodings
