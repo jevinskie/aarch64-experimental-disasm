@@ -44,29 +44,25 @@ def bitmask(pos: int, nbits: int) -> int:
 
 # FIXME
 def pack_constraints(constraints: list[Constraint]) -> list[Constraint]:
+    orig = constraints
     packed = constraints.copy()
     csz = len(constraints)
-    if csz == 6:
-        []
     i = 0
-    while len(packed) >= 2:
-        if i >= csz:
+    while True:
+        if i + 1 >= csz:
             break
         j = i
-        val = packed[j].val
-        sz = packed[j].sz
+        val = orig[j].val
+        sz = orig[j].sz
         while j < csz - 1:
-            if (
-                packed[j].pos - packed[j].sz == packed[j + 1].pos
-                and packed[j].neg == packed[j + 1].neg
-            ):
-                val = (val << packed[j].sz) | packed[j + 1].val
-                sz += packed[j + 1].sz
+            if orig[j].pos - orig[j].sz == orig[j + 1].pos and orig[j].neg == orig[j + 1].neg:
+                val = (val << orig[j].sz) | orig[j + 1].val
+                sz += orig[j + 1].sz
                 j += 1
             else:
                 break
         if j != i:
-            packed[i:j] = [Constraint(packed[j].pos, sz, val, packed[i].neg)]
+            packed[: j - i + 1] = [Constraint(orig[j].pos, sz, val, orig[i].neg)]
         i = j + 1
     return packed
 
@@ -95,6 +91,7 @@ def parse_box(box) -> Field:
                     pass
                 else:
                     raise ValueError(f"got weird bit '{b}'")
+            constraints = pack_constraints(constraints)
         else:
             constraints = []
             csz = len(box.c)

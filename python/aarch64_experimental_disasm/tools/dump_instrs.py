@@ -36,7 +36,6 @@ def print_encoding(enc: Encoding):
 def real_main(args):
     if args.xml_dir is not None:
         encs = parse_encodings_xml(args.xml_dir)
-        # print(encs)
         for enc in encs:
             print_encoding(enc)
     elif args.xml_inst is not None:
