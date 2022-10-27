@@ -73,11 +73,19 @@ def parse_box(box) -> Field:
     else:
         if "constraint" in box.attrib:
             cstr = box.attrib["constraint"]
-            if not cstr.startswith("!= "):
-                constraints = [Constraint(0, len(cstr), int(cstr, 2), False)]
-            else:
-                cstr = cstr.removeprefix("!= ")
-                constraints = [Constraint(0, len(cstr), int(cstr, 2), True)]
+            neg = cstr.startswith("!= ")
+            cstr = cstr.removeprefix("!= ")
+            constraints = []
+            csz = len(cstr)
+            for i, b in enumerate(cstr):
+                if b == "0":
+                    constraints.append(Constraint(csz - i - 1, 1, 0, neg))
+                elif b == "1":
+                    constraints.append(Constraint(csz - i - 1, 1, 1, neg))
+                elif b == "x":
+                    pass
+                else:
+                    raise ValueError(f"got weird bit '{b}'")
         else:
             constraints = []
             csz = len(box.c)
@@ -119,9 +127,13 @@ def parse_fields(fields: tuple[Field]) -> tuple[int, int, int, int]:
 def parse_instruction_xml(xml_instsect_file: Path) -> list[Encoding]:
     encodings = []
     tree = objectify.parse(str(xml_instsect_file))
-    if tree.docinfo.internalDTD.name != "instructionsection":
+    if tree.docinfo.internalDTD.system_url != "iform-p.dtd":
         return []
-    iclasses = tree.getroot().classes.iclass
+    root = tree.getroot()
+    classes = root.find("classes")
+    if classes is None:
+        return []
+    iclasses = classes.iclass
     for iclass in iclasses:
         path = iclass.regdiagram.attrib["psname"]
         path = path.replace("aarch64/instrs", "aarch64")
