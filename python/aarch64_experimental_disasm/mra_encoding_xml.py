@@ -44,21 +44,30 @@ def bitmask(pos: int, nbits: int) -> int:
 
 # FIXME
 def pack_constraints(constraints: list[Constraint]) -> list[Constraint]:
-    packed = []
+    packed = constraints.copy()
     csz = len(constraints)
-    if csz < 2:
-        return constraints
-    prev_c = constraints[0]
-    new_c = None
-    for i in range(1, csz):
-        this_c = constraints[i]
-        if prev_c.pos - prev_c.sz == this_c.pos and prev_c.neg == this_c.neg:
-            new_c = Constraint()
-        else:
-            packed.append(prev_c)
-        prev_c = this_c
     if csz == 6:
-        pass
+        []
+    i = 0
+    while len(packed) >= 2:
+        if i >= csz:
+            break
+        j = i
+        val = packed[j].val
+        sz = packed[j].sz
+        while j < csz - 1:
+            if (
+                packed[j].pos - packed[j].sz == packed[j + 1].pos
+                and packed[j].neg == packed[j + 1].neg
+            ):
+                val = (val << packed[j].sz) | packed[j + 1].val
+                sz += packed[j + 1].sz
+                j += 1
+            else:
+                break
+        if j != i:
+            packed[i:j] = [Constraint(packed[j].pos, sz, val, packed[i].neg)]
+        i = j + 1
     return packed
 
 
@@ -98,6 +107,7 @@ def parse_box(box) -> Field:
                     pass
                 else:
                     raise ValueError(f"got weird bit '{c.text}'")
+            constraints = pack_constraints(constraints)
     return Field(pos, sz, constraints, name)
 
 
