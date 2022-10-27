@@ -10,6 +10,8 @@ from rich import print
 
 @define
 class Constraint:
+    pos: int
+    sz: int
     val: int
     neg: bool
 
@@ -18,7 +20,7 @@ class Constraint:
 class Field:
     pos: int
     sz: int
-    constraint: Optional[Constraint]
+    constraints: Optional[tuple[Constraint]]
     name: Optional[str]
 
 
@@ -34,38 +36,61 @@ class Encoding:
     fields: tuple[Field]
 
 
-BINSTR_RE = re.compile("[01]+")
-NE_BINSTR_RE = re.compile("!= [01]+")
-
-
 def bitmask(pos: int, nbits: int) -> int:
     hi_mask = (1 << (pos + nbits)) - 1
     lo_mask = (1 << pos) - 1
     return hi_mask ^ lo_mask
 
 
+# FIXME
+def pack_constraints(constraints: list[Constraint]) -> list[Constraint]:
+    packed = []
+    csz = len(constraints)
+    if csz < 2:
+        return constraints
+    prev_c = constraints[0]
+    new_c = None
+    for i in range(1, csz):
+        this_c = constraints[i]
+        if prev_c.pos - prev_c.sz == this_c.pos and prev_c.neg == this_c.neg:
+            new_c = Constraint()
+        else:
+            packed.append(prev_c)
+        prev_c = this_c
+    if csz == 6:
+        pass
+    return packed
+
+
 def parse_box(box) -> Field:
     sz = 1 if "width" not in box.attrib else int(box.attrib["width"])
-    pos = int(box.attrib["hibit"]) - sz
+    pos = int(box.attrib["hibit"]) - (sz - 1)
     name = None
     if "name" in box.attrib and "usename" in box.attrib:
         name = box.attrib["name"]
     if all(c.text is None for c in box.c):
-        constraint = None
+        constraints = None
     else:
         if "constraint" in box.attrib:
             cstr = box.attrib["constraint"]
             if not cstr.startswith("!= "):
-                constraint = Constraint(int(cstr, 2), False)
+                constraints = [Constraint(0, len(cstr), int(cstr, 2), False)]
             else:
                 cstr = cstr.removeprefix("!= ")
-                constraint = Constraint(int(cstr, 2), True)
+                constraints = [Constraint(0, len(cstr), int(cstr, 2), True)]
         else:
-            cval = 0
-            for c in box.c:
-                cval = (cval << 1) | int(c.text, 2)
-            constraint = Constraint(cval, False)
-    return Field(pos, sz, constraint, name)
+            constraints = []
+            csz = len(box.c)
+            for i, c in enumerate(box.c):
+                if c.text == "0" or c.text == "(0)":
+                    constraints.append(Constraint(csz - i - 1, 1, 0, False))
+                elif c.text == "1" or c.text == "(1)":
+                    constraints.append(Constraint(csz - i - 1, 1, 1, False))
+                elif c.text == "x" or c.text == "(x)":
+                    pass
+                else:
+                    raise ValueError(f"got weird bit '{c.text}'")
+    return Field(pos, sz, constraints, name)
 
 
 def parse_boxes(boxes: lxml.objectify.ObjectifiedElement) -> tuple[Field]:
@@ -78,38 +103,43 @@ def parse_boxes(boxes: lxml.objectify.ObjectifiedElement) -> tuple[Field]:
 def parse_fields(fields: tuple[Field]) -> tuple[int, int, int, int]:
     pos_mask, pos_val, neg_mask, neg_val = 0, 0, 0, 0
     for f in fields:
-        if f.constraint is None:
+        if f.constraints is None:
             continue
-        c = f.constraint
-        if not c.neg:
-            pos_mask |= bitmask(f.pos, f.sz)
-            pos_val |= c.val << f.pos
-        else:
-            neg_mask |= bitmask(f.pos, f.sz)
-            neg_val |= c.val << f.pos
+        c = f.constraints
+        for sub_c in c:
+            if not sub_c.neg:
+                pos_mask |= bitmask(f.pos + sub_c.pos, sub_c.sz)
+                pos_val |= sub_c.val << (f.pos + sub_c.pos)
+            else:
+                neg_mask |= bitmask(f.pos + sub_c.pos, sub_c.sz)
+                neg_val |= sub_c.val << (f.pos + sub_c.pos)
     return pos_mask, pos_val, neg_mask, neg_val
 
 
-def parse_instruction_xml(xml_instsect_file: Path) -> tuple[Encoding]:
+def parse_instruction_xml(xml_instsect_file: Path) -> list[Encoding]:
     encodings = []
     tree = objectify.parse(str(xml_instsect_file))
-    root = tree.getroot()
-    iclasses = root.classes.iclass
+    if tree.docinfo.internalDTD.name != "instructionsection":
+        return []
+    iclasses = tree.getroot().classes.iclass
     for iclass in iclasses:
         path = iclass.regdiagram.attrib["psname"]
-        path.replace("aarch64/instrs", "aarch64")
+        path = path.replace("aarch64/instrs", "aarch64")
         path = Path(path).parent
         name = iclass.encoding.attrib["name"]
         mnemonic = next(
-            filter(lambda dv: dv.attrib["key"] == "mnemonic", iclass.docvars.docvar)
+            filter(lambda dv: dv.attrib["key"] == "mnemonic", iclass.encoding.docvars.docvar)
         ).attrib["value"]
         fields = parse_boxes(iclass.regdiagram.box)
         pos_mask, pos_val, neg_mask, neg_val = parse_fields(fields)
         enc = Encoding(mnemonic, name, path, pos_mask, pos_val, neg_mask, neg_val, fields)
         encodings.append(enc)
-    return tuple(encodings)
+    return encodings
 
 
-def parse_encodings_xml(xml_dir: Path) -> tuple[Encoding]:
+def parse_encodings_xml(xml_dir: Path) -> list[Encoding]:
     encodings = []
-    return tuple(encodings)
+    xml_files = xml_dir.glob("*.xml")
+    for f in xml_files:
+        encodings.append(parse_instruction_xml(f))
+    return encodings
