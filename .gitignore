@@ -5,6 +5,9 @@ mra-a64-xml
 # vscode
 **/.vscode/
 
+# JetBrains
+**/.idea/
+
 # build folder
 build/
 

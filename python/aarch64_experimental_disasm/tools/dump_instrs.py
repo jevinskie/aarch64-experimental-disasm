@@ -3,6 +3,7 @@
 import argparse
 from pathlib import Path
 
+from aarch64_experimental_disasm.cpp_gen import gen_cpp
 from aarch64_experimental_disasm.mra_encoding_xml import *
 from rich import print
 
@@ -36,19 +37,23 @@ def print_encoding(enc: Encoding):
 def real_main(args):
     if args.xml_dir is not None:
         encs = parse_encodings_xml(args.xml_dir)
-        for enc in encs:
-            print_encoding(enc)
     elif args.xml_inst is not None:
         encs = parse_instruction_xml(args.xml_inst)
-        print(encs)
+    else:
+        raise ValueError("Must provide XML dir or instruction file")
+    if args.dump_enc:
         for enc in encs:
             print_encoding(enc)
+    if args.cpp_gen is not None:
+        gen_cpp(args.cpp_gen, encs)
 
 
 def get_arg_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="aarch64-dump-instrs")
     parser.add_argument("-x", "--xml-dir", type=Path, help="MRA XML directory")
     parser.add_argument("-i", "--xml-inst", type=Path, help="MRA XML instruction file")
+    parser.add_argument("-d", "--dump-enc", action="store_true", help="dump encodings textually")
+    parser.add_argument("-c", "--cpp-gen", type=Path, help="write C++ decoder")
     return parser
 
 
