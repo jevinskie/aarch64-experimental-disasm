@@ -35,6 +35,26 @@ class Encoding:
     neg_val: int
     fields: tuple[Field]
 
+    @property
+    def cpp_name_str(self) -> str:
+        return f"{self.name}\\0{self.mnemonic}"
+
+    @property
+    def pos_mask_str(self) -> str:
+        return f"{self.pos_mask:#010x}"
+
+    @property
+    def pos_val_str(self) -> str:
+        return f"{self.pos_val:#010x}"
+
+    @property
+    def neg_mask_str(self) -> str:
+        return f"{self.neg_mask:#010x}"
+
+    @property
+    def neg_val_str(self) -> str:
+        return f"{self.neg_val:#010x}"
+
 
 def bitmask(pos: int, nbits: int) -> int:
     hi_mask = (1 << (pos + nbits)) - 1

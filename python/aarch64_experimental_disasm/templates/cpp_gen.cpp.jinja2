@@ -1,0 +1,25 @@
+#include <cstdint>
+
+namespace whodis {
+
+struct EncodingBits {
+    uint32_t pos_mask;
+    uint32_t pos_val;
+    uint32_t neg_mask;
+    uint32_t neg_val;
+};
+
+constexpr EncodingBits encoding_bits[] = {
+{%- for enc in encs %}
+    {% raw %}{{% endraw %}{{ enc.pos_mask_str }}, {{ enc.pos_val_str}}, {{ enc.neg_mask_str }}, {{ enc.neg_val_str }}{% raw %}}{% endraw %},
+{%- endfor %}
+};
+
+constexpr const char *encoding_names[] {
+{%- for enc in encs %}
+    "{{ enc.cpp_name_str }}",
+{%- endfor %}
+};
+
+} // namespace whodis
+
