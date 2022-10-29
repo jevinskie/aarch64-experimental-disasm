@@ -1,25 +1,29 @@
-#include <cstdint>
-
-namespace whodis {
-
-struct EncodingBits {
-    uint32_t pos_mask;
-    uint32_t pos_val;
-    uint32_t neg_mask;
-    uint32_t neg_val;
+enum enc_t : uint16_t {
+    UNDEFINED, // 0
+{%- for enc in encs %}
+    {{ enc.name }}, // {{ loop.index }}
+{%- endfor %}
+    ENC_MAX, // {{ encs|length }}
 };
 
 constexpr EncodingBits encoding_bits[] = {
+    {}, // UNDEFINED
 {%- for enc in encs %}
-    {% raw %}{{% endraw %}{{ enc.pos_mask_str }}, {{ enc.pos_val_str}}, {{ enc.neg_mask_str }}, {{ enc.neg_val_str }}{% raw %}}{% endraw %},
+    {% raw %}{{% endraw %}{{ enc.pos_mask_str }}, {{ enc.pos_val_str}}, {{ enc.neg_mask_str }}, {{ enc.neg_val_str }}{% raw %}}{% endraw %}, // {{ enc.name }} / {{ enc.mnemonic }}
 {%- endfor %}
 };
 
-constexpr const char *encoding_names[] {
+constexpr const char *encoding_names[] = {
+    "UNDEFINED", // UNDEFINED
 {%- for enc in encs %}
-    "{{ enc.cpp_name_str }}",
+    "{{ enc.name }}", // {{ enc.mnemonic }}
 {%- endfor %}
 };
 
-} // namespace whodis
+constexpr const char *encoding_mnemonics[] = {
+    "UNDEFINED", // UNDEFINED
+{%- for enc in encs %}
+    "{{ enc.mnemonic }}", // {{ enc.name }}
+{%- endfor %}
+};
 

@@ -36,10 +36,6 @@ class Encoding:
     fields: tuple[Field]
 
     @property
-    def cpp_name_str(self) -> str:
-        return f"{self.name}\\0{self.mnemonic}"
-
-    @property
     def pos_mask_str(self) -> str:
         return f"{self.pos_mask:#010x}"
 
