@@ -3,7 +3,7 @@ enum enc_t : uint16_t {
 {%- for enc in encs %}
     {{ enc.name }}, // {{ loop.index }}
 {%- endfor %}
-    ENC_MAX, // {{ encs|length }}
+    ENC_MAX, // {{ encs|length + 1 }}
 };
 
 constexpr EncodingBits encoding_bits[] = {
