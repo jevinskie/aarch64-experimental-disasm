@@ -7,23 +7,23 @@ enum enc_t : uint16_t {
 };
 
 constexpr EncodingBits encoding_bits[] = {
-    {}, // UNDEFINED
+    {}, // UNDEFINED / 0
 {%- for enc in encs %}
-    {% raw %}{{% endraw %}{{ enc.pos_mask_str }}, {{ enc.pos_val_str}}, {{ enc.neg_mask_str }}, {{ enc.neg_val_str }}{% raw %}}{% endraw %}, // {{ enc.name }} / {{ enc.mnemonic }}
+    {% raw %}{{% endraw %}{{ enc.pos_mask_str }}, {{ enc.pos_val_str}}, {{ enc.neg_mask_str }}, {{ enc.neg_val_str }}{% raw %}}{% endraw %}, // {{ enc.name }} / {{ enc.mnemonic }} / {{ loop.index }}
 {%- endfor %}
 };
 
 constexpr const char *encoding_names[] = {
-    "UNDEFINED", // UNDEFINED
+    "UNDEFINED", // UNDEFINED / 0
 {%- for enc in encs %}
-    "{{ enc.name }}", // {{ enc.mnemonic }}
+    "{{ enc.name }}", // {{ enc.mnemonic }} / {{ loop.index }}
 {%- endfor %}
 };
 
 constexpr const char *encoding_mnemonics[] = {
-    "UNDEFINED", // UNDEFINED
+    "UNDEFINED", // UNDEFINED / 0
 {%- for enc in encs %}
-    "{{ enc.mnemonic }}", // {{ enc.name }}
+    "{{ enc.mnemonic }}", // {{ enc.name }} / {{ loop.index }}
 {%- endfor %}
 };
 

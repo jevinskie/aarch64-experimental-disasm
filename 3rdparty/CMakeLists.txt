@@ -7,7 +7,3 @@ if (NOT TARGET fmt)
     option(FMT_TEST OFF)
     add_subdirectory(fmt)
 endif ()
-
-if (NOT TARGET scn::scn)
-    add_subdirectory(scnlib)
-endif ()

@@ -2,17 +2,14 @@
 #include <cstdint>
 #include <cstdlib>
 #include <cstring>
-#include <filesystem>
 #include <fstream>
+#include <set>
 #include <string>
-
-#include <fmt/format.h>
+#include <vector>
 
 #include <argparse/argparse.hpp>
-#include <scn/scn.h>
+#include <fmt/format.h>
 #include <whodis/whodis.h>
-
-namespace fs = std::filesystem;
 
 int main(int argc, const char **argv) {
     argparse::ArgumentParser parser(getprogname());
@@ -33,16 +30,6 @@ int main(int argc, const char **argv) {
     const auto brute      = parser["--brute-force"] == true;
 
     if (instr_list) {
-        // scn::basic_owning_file<char> file{instr_list->c_str(), "r"};
-        // std::string line;
-        // while (true) {
-        //     auto lres = scn::getline(file, line);
-        //     if (lres.error() == scn::error::end_of_range) {
-        //         break;
-        //     }
-        //     fmt::print("line: {:s}\n", line);
-        // }
-
         std::ifstream f;
         f.open(*instr_list);
         if (!f) {
@@ -50,8 +37,18 @@ int main(int argc, const char **argv) {
             return -2;
         }
 
-        for (std::string line; std::getline(f, line);) {
-            fmt::print("l: {:s}\n", line);
+        uint32_t inst;
+        std::set<std::set<uint16_t>> dups;
+        while (f >> std::hex >> inst) {
+            dups.emplace(whodis::get_all_matching(inst));
+        }
+        for (const auto &dup : dups) {
+            std::vector<std::string> dup_desc;
+            for (const auto &idx : dup) {
+                dup_desc.emplace_back(std::string{whodis::encoding_names[idx]} + " / " +
+                                      whodis::encoding_mnemonics[idx]);
+            }
+            fmt::print("dups: {} {}\n", fmt::join(dup, ", "), fmt::join(dup_desc, ", "));
         }
     }
 
