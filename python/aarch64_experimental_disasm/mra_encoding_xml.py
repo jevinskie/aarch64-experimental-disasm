@@ -51,6 +51,10 @@ class Encoding:
     def neg_val_str(self) -> str:
         return f"{self.neg_val:#010x}"
 
+    @property
+    def mask_fields(self) -> tuple[int, int, int, int]:
+        return (self.pos_mask, self.pos_val, self.neg_mask, self.neg_val)
+
 
 def bitmask(pos: int, nbits: int) -> int:
     hi_mask = (1 << (pos + nbits)) - 1

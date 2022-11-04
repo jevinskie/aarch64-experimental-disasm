@@ -34,6 +34,26 @@ def print_encoding(enc: Encoding):
     print(f"{bs};{enc.mnemonic};{enc.name}")
 
 
+def dupes(items) -> list:
+    seen = set()
+    res = []
+    for x in items:
+        if x in seen:
+            res.append(x)
+        else:
+            seen.add(x)
+    return res
+
+
+def dup_check(encs: list[Encoding]) -> None:
+    print(len(encs))
+    enc_tup = [(e.pos_mask, e.pos_val, e.neg_mask, e.neg_val) for e in encs]
+    dups = dupes(enc_tup)
+    print(len(enc_tup))
+    print(len(dups))
+    print(dups)
+
+
 def real_main(args):
     if args.xml_dir is not None:
         encs = parse_encodings_xml(args.xml_dir)
@@ -44,6 +64,8 @@ def real_main(args):
     if args.dump_enc:
         for enc in encs:
             print_encoding(enc)
+    if args.dup_check:
+        dup_check(encs)
     if args.cpp_gen is not None:
         gen_cpp(args.cpp_gen, encs)
 
@@ -54,6 +76,9 @@ def get_arg_parser() -> argparse.ArgumentParser:
     parser.add_argument("-i", "--xml-inst", type=Path, help="MRA XML instruction file")
     parser.add_argument("-d", "--dump-enc", action="store_true", help="dump encodings textually")
     parser.add_argument("-c", "--cpp-gen", type=Path, help="write C++ decoder")
+    parser.add_argument(
+        "-D", "--dup-check", action="store_true", help="check for duplicate encodings"
+    )
     return parser
 
 

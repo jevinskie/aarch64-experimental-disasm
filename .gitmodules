@@ -7,3 +7,6 @@
 [submodule "3rdparty/argparse"]
 	path = 3rdparty/argparse
 	url = https://github.com/p-ranav/argparse
+[submodule "3rdparty/cpptqdm"]
+	path = 3rdparty/cpptqdm
+	url = https://github.com/aminnj/cpptqdm
